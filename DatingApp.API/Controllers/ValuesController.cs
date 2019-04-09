@@ -14,21 +14,21 @@ namespace DatingApp.API.Controllers
     {
         // GET api/values
         private DataContext _context;
-        public ValuesController(DataContext context)
-        {
-            _context=context;
-        }
+            public ValuesController(DataContext context)
+            {
+                _context=context;
+            }
         [HttpGet]
-        public async Task<IActionResult> Get()
+        public async Task<IActionResult> GetValues()
         {
             return Ok(await _context.Values.ToListAsync());
         }
 
         // GET api/values/5
         [HttpGet("{id}")]
-        public async Task<IActionResult> Get(int id)
+        public ActionResult<string> Get(int id)
         {
-            return Ok(await _context.Values.SingleAsync(x=>x.Id==id));
+            return "value";
         }
 
         // POST api/values
