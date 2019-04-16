@@ -6,12 +6,14 @@ using System.Threading.Tasks;
 using DatingApp.API.Data;
 using DatingApp.API.Dtos;
 using DatingApp.API.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 
 namespace DatingApp.API.Controllers
 {
+    // [Authorize]
     [Route("api/[controller]")]
     [ApiController]
     public class AuthController : ControllerBase
@@ -39,66 +41,32 @@ namespace DatingApp.API.Controllers
           return StatusCode(201);
         }
 
-        //  [HttpPost("login")]
-        //  public async Task<IActionResult> Login(UserForLogin user){
-        //    var userExistsOrNot=await _repo.Login(user.username.ToLower(),user.password);
-        //    if(user==null){
-        //        return Unauthorized();
-        //    }
-        //    var claims=new[]{
-        //        new Claim(ClaimTypes.NameIdentifier,userExistsOrNot.id.ToString()),
-        //        new Claim(ClaimTypes.Name,userExistsOrNot.username)
-        //     };
-        //     var key=new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config.GetSection("AppSettings:Token").Value));
-        //     var keyCredential=new SigningCredentials(key,SecurityAlgorithms.HmacSha512Signature);
-        //     var TokenDescriptor=new SecurityTokenDescriptor{
-        //         Subject=new ClaimsIdentity(claims),
-        //         Expires=DateTime.Now.AddDays(1),
-        //         SigningCredentials=keyCredential
-
-        //     };
-        //     var tokenHandler=new JwtSecurityTokenHandler();
-        //     var token=tokenHandler.CreateToken(TokenDescriptor);
-        //       return Ok(new {
-        //             token=tokenHandler.WriteToken(token)
-        //       });
-        //  }
         [HttpPost("login")]
         public async Task<IActionResult> Login(UserForLogin user){
-            var userExistsOrNot=await _repo.Login(user.username.ToLower(),user.password);
-            if(userExistsOrNot==null){
-                 return Unauthorized();
-            }
+           var userExists=await _repo.Login(user.username.ToLower(),user.password);
+           if(userExists==null){
+               return Unauthorized();
+           }
 
-            //User Identity generation for server
-            var claims=new[]{
-                new Claim(ClaimTypes.NameIdentifier,userExistsOrNot.id.ToString()),
-                 new Claim(ClaimTypes.Name,userExistsOrNot.username)
-            };
+           var claims=new[]
+           {
+              new Claim(ClaimTypes.NameIdentifier,userExists.id.ToString()),
+              new Claim(ClaimTypes.Name,userExists.username)
+           };
 
-            //Token Key Generation based on appsettings.json
-            var key=new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config.GetSection("AppSettings:Token").Value));
+           var key=new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config.GetSection("AppSettings:Token").Value));
+           var keyCredential=new SigningCredentials(key,SecurityAlgorithms.HmacSha512Signature);
 
-            //Hashed the generated key
-            var keyCredential=new SigningCredentials(key,SecurityAlgorithms.HmacSha512Signature);
-
-            //Token Descriptor(Part of Payload)
-            var tokenDescriptor=new SecurityTokenDescriptor{
-                Subject=new ClaimsIdentity(claims),
-                Expires=DateTime.Now.AddDays(1),
-                SigningCredentials=keyCredential
-            };
-
-            //Token Handaler
-            var tokenHandler=new JwtSecurityTokenHandler();
-
-            //Finally Desire Token
-
-            var token=tokenHandler.CreateToken(tokenDescriptor);
-
-            return Ok(new{
-                token=tokenHandler.WriteToken(token)
-            });
+           var TokenDescriptor=new SecurityTokenDescriptor{
+               Subject=new ClaimsIdentity(claims),
+               Expires=DateTime.Now.AddDays(1),
+               SigningCredentials=keyCredential
+           };
+           var tokenHandler=new JwtSecurityTokenHandler();
+          var token=tokenHandler.CreateToken(TokenDescriptor);
+          return Ok(new{
+              token=tokenHandler.WriteToken(token)
+          });
         }
     }
 }
